@@ -1,0 +1,11 @@
+{
+  "country": "MY",
+  "currency": "MYR",
+  "marketplaces": ["tiktok", "lazada", "shopee"],
+  "queries": [
+    "wireless earbuds", "power bank", "phone accessories",
+    "home storage", "kitchen organizer", "beauty skincare",
+    "modest fashion", "fitness accessories", "pet supplies",
+    "car accessories"
+  ]
+}
