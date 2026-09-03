@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Weekly Top 20 product opportunities across TikTok Shop, Lazada and Shopee Malaysia.">
+  <title>Malaysia Product Radar</title>
+  <style>
+    :root { color-scheme: dark; --bg:#071018; --panel:#101b26; --line:#233344; --muted:#91a4b7; --cyan:#37e6ca; --gold:#ffc857; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(circle at top right,#12303b 0,transparent 36%),var(--bg); color:#f4f8fb; font:15px/1.5 Inter,system-ui,sans-serif; }
+    main { width:min(1180px,92vw); margin:auto; padding:46px 0 70px; }
+    header { display:flex; gap:28px; justify-content:space-between; align-items:end; flex-wrap:wrap; }
+    .eyebrow { color:var(--cyan); letter-spacing:.14em; text-transform:uppercase; font-weight:800; font-size:12px; }
+    h1 { margin:.2rem 0; font-size:clamp(34px,6vw,64px); line-height:1; }
+    .subtitle,.muted { color:var(--muted); }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; margin:28px 0 18px; }
+    input,button { border:1px solid var(--line); border-radius:10px; color:inherit; background:#0b1620; padding:11px 14px; }
+    input { min-width:min(360px,90vw); }
+    button { cursor:pointer; }
+    button.active { background:var(--cyan); color:#04100e; border-color:var(--cyan); font-weight:800; }
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0; }
+    .stat { background:linear-gradient(145deg,#132231,#0c1721); border:1px solid var(--line); border-radius:14px; padding:18px; }
+    .stat strong { display:block; color:var(--gold); font-size:25px; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:14px; background:rgba(12,23,33,.88); }
+    table { border-collapse:collapse; width:100%; min-width:960px; }
+    th,td { padding:13px 14px; border-bottom:1px solid var(--line); text-align:left; }
+    th { position:sticky; top:0; background:#132231; color:#b9c7d4; font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+    tbody tr:hover { background:#132332; }
+    .rank { color:var(--gold); font-weight:900; }
+    .score { color:var(--cyan); font-weight:900; }
+    .badge { display:inline-block; margin:2px; padding:3px 7px; border:1px solid #385069; border-radius:99px; font-size:11px; }
+    .warning { margin:18px 0; border-left:4px solid var(--gold); background:#2b2413; padding:13px 16px; }
+    .empty { padding:42px; text-align:center; color:var(--muted); }
+    footer { margin-top:18px; color:var(--muted); font-size:13px; }
+    @media(max-width:720px){ .stats{grid-template-columns:1fr 1fr;} }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">Malaysia · Weekly intelligence</div>
+      <h1>Product Radar</h1>
+      <div class="subtitle">TikTok Shop × Lazada × Shopee opportunity comparison</div>
+    </div>
+    <div id="updated" class="muted">Loading latest snapshot…</div>
+  </header>
+  <section class="stats">
+    <div class="stat"><span>Ranked products</span><strong id="products">–</strong></div>
+    <div class="stat"><span>Source records</span><strong id="records">–</strong></div>
+    <div class="stat"><span>Platforms</span><strong id="platforms">3</strong></div>
+    <div class="stat"><span>Coverage warnings</span><strong id="warnings">–</strong></div>
+  </section>
+  <div id="warning"></div>
+  <section class="controls">
+    <input id="search" type="search" placeholder="Search the Top 20…" aria-label="Search products">
+    <button class="active" data-market="all">All</button>
+    <button data-market="tiktok">TikTok</button>
+    <button data-market="lazada">Lazada</button>
+    <button data-market="shopee">Shopee</button>
+  </section>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Product</th><th>Score</th><th>Markets</th><th>MYR range</th><th>Visible sold</th><th>Weekly Δ sold</th><th>Rating</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <footer>Trend score uses visible public signals. It is not verified revenue, profit, inventory or investment advice.</footer>
+</main>
+<script>
+  let data={ranked:[],failures:[]}, market='all';
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=n=>n==null?'–':new Intl.NumberFormat('en-MY',{notation:'compact'}).format(n);
+  function render(){
+    const q=document.querySelector('#search').value.toLowerCase();
+    const visible=data.ranked.filter(x=>(market==='all'||x.marketplaces.includes(market))&&x.representative_title.toLowerCase().includes(q));
+    document.querySelector('#rows').innerHTML=visible.length?visible.map((x,i)=>`<tr><td class="rank">${i+1}</td><td>${esc(x.representative_title)}</td><td class="score">${x.trend_score}</td><td>${x.marketplaces.split(',').map(m=>`<span class="badge">${esc(m)}</span>`).join('')}</td><td>${x.min_price_myr??'–'}–${x.max_price_myr??'–'}</td><td>${num(x.max_visible_sold)}</td><td>${x.weekly_sold_change==null?'First snapshot':'+'+num(x.weekly_sold_change)}</td><td>${x.best_rating||'–'}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">No matching products.</td></tr>';
+  }
+  fetch('./data/latest.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(x=>{
+    data=x; document.querySelector('#products').textContent=x.ranked.length; document.querySelector('#records').textContent=x.source_records??0; document.querySelector('#warnings').textContent=x.failures.length;
+    document.querySelector('#updated').textContent=x.generated_at?'Updated '+new Date(x.generated_at).toLocaleString('en-MY',{timeZone:'Asia/Kuala_Lumpur'}):'Waiting for first live run';
+    if(x.mode!=='direct') document.querySelector('#warning').innerHTML='<div class="warning">Live direct collection has not completed yet. Do not treat placeholder or demo results as market data.</div>';
+    render();
+  }).catch(()=>{document.querySelector('#rows').innerHTML='<tr><td colspan="8" class="empty">No published snapshot yet.</td></tr>'});
+  document.querySelector('#search').addEventListener('input',render);
+  document.querySelectorAll('[data-market]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-market]').forEach(x=>x.classList.remove('active'));b.classList.add('active');market=b.dataset.market;render()}));
+</script>
+</body>
+</html>

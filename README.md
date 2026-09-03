@@ -1,58 +1,97 @@
 # Malaysia Cross-Market Product Radar
 
-Weekly, evidence-preserving ranking of trend opportunities across TikTok Shop Malaysia, Lazada Malaysia, and Shopee Malaysia.
+A weekly, evidence-preserving Top 20 trend-opportunity comparison across TikTok Shop Malaysia, Lazada Malaysia, and Shopee Malaysia.
 
-## What it does
+## No-provider edition
 
-- collects marketplace search/category snapshots through configurable adapters;
-- normalizes MYR price, sold count, rating, review count, seller and URL;
-- matches equivalent products across marketplaces;
-- compares price and marketplace coverage;
-- ranks the Top 20 using a transparent trend-opportunity score;
-- writes CSV, JSON, Markdown and raw evidence files;
-- runs every Monday at 09:00 Asia/Kuala_Lumpur (01:00 UTC) with GitHub Actions.
+The default live mode uses a real Chromium browser on your own Windows PC. It needs no paid scraping endpoint and no scraping API token. A self-hosted GitHub Actions runner schedules the job and receives a temporary repository-scoped `GITHUB_TOKEN` automatically for committing results.
 
-## Important data-access note
+The collector does **not** bypass CAPTCHAs, access controls, or private APIs. It collects product metadata visible in ordinary marketplace search pages and records a screenshot when a page requires manual attention.
 
-Official seller APIs normally expose authorized shop data, not a complete national bestseller feed. For market-wide discovery, configure a lawful data provider or your own permitted collection endpoint. `demo` mode is included so the entire normalization/ranking pipeline can be tested without pretending sample data is live.
+## Outputs
 
-## Quick start
+- `output/YYYY-MM-DD/top20.csv` — spreadsheet-friendly ranking
+- `output/YYYY-MM-DD/top20.json` — full ranking and source offers
+- `output/YYYY-MM-DD/report.md` — human-readable weekly report
+- `output/YYYY-MM-DD/raw/` — query-level normalized evidence
+- `output/YYYY-MM-DD/evidence/` — screenshots and collection diagnostics
+- `history/radar.sqlite3` — weekly observations used for velocity scoring
+- `docs/` — static Product Radar dashboard for GitHub Pages
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-cp .env.example .env
-python -m radar
-```
+## Ranking model
 
-Outputs are written to `output/YYYY-MM-DD/`.
+After two successful snapshots, the score combines:
 
-## Live provider contract
-
-Set `RADAR_MODE=provider` and `PROVIDER_ENDPOINT`. The endpoint receives a POST request containing `marketplace`, `country`, `query`, and `limit`. It must return either an array or `{ "items": [...] }`. Supported aliases are documented in `radar/providers.py`.
-
-This deliberately avoids hard-coding fragile private endpoints, bypass logic, CAPTCHA solving, or account-cookie extraction. Review each platform's terms and Malaysia privacy requirements before collection.
-
-## Ranking
-
-The score (0–100) combines:
-
-- 30% log-scaled sold count
-- 20% rating quality
-- 15% review confidence
+- 25% visible sold-count strength
+- 20% weekly sold/review velocity
+- 15% rating quality
+- 10% review confidence
 - 15% cross-market presence
-- 10% price competitiveness
+- 5% price-comparison coverage
 - 10% discount signal
 
-It is an opportunity indicator, not verified revenue or profit. A weekly history database is used to add sales/review velocity once two or more snapshots exist.
+The first snapshot automatically redistributes the velocity weight because no earlier observation exists. Visible sold counts are marketplace labels, not audited revenue.
+
+## Windows installation
+
+Requirements: Windows 11, Python 3.12+, Git, and a Chromium-compatible environment.
+
+Open PowerShell inside the cloned repository and run:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\setup_windows.ps1
+```
+
+The setup opens TikTok Shop, Lazada and Shopee in a persistent browser profile. Complete any normal login or Malaysia-region prompt, return to PowerShell, and press Enter. The browser profile stays under your Windows local application-data directory and is excluded from Git.
+
+Run the first collection visibly:
+
+```powershell
+.\scripts\run_now.ps1
+```
+
+Review the screenshots, failure list, and Top 20 before enabling unattended runs.
+
+## Self-hosted GitHub runner
+
+In this repository, open **Settings → Actions → Runners → New self-hosted runner**, select Windows x64, and follow GitHub's generated commands. Configure the runner under the same Windows user that completed the browser setup so it can access the saved profile.
+
+The included workflow runs every Monday at 09:00 Malaysia time (01:00 UTC). Your PC must be powered on, connected to the internet, and the runner must be active.
+
+## Publish the dashboard
+
+Open **Settings → Pages**, select **GitHub Actions** as the source, then run the “Publish Product Radar Website” workflow. GitHub Pages on a private repository requires an eligible GitHub plan; otherwise make only this repository public after confirming that no browser profile, cookies, or sensitive files were committed.
 
 ## Configuration
 
-Edit `config/queries.json` to choose categories or keywords. Broad Malaysia-wide coverage requires a carefully maintained query/category taxonomy; the starter list is intentionally manageable.
+Edit `config/queries.json` to change keywords, marketplace coverage, or scroll depth. Start with a small taxonomy, inspect its quality, and expand gradually.
 
-## GitHub Actions secrets
+Environment settings:
 
-- `PROVIDER_ENDPOINT`
-- `PROVIDER_TOKEN` (optional, but recommended)
+| Variable | Default | Purpose |
+|---|---|---|
+| `RADAR_MODE` | `demo` | Set to `direct` for live browser collection |
+| `RADAR_HEADLESS` | `true` | Use `false` for visible troubleshooting |
+| `RADAR_BROWSER_PROFILE` | OS-specific local folder | Override persistent browser profile location |
+| `RADAR_PAGE_DELAY_MS` | `2500` | Minimum wait after page navigation |
+| `RESULTS_PER_QUERY` | `50` | Maximum offers per marketplace/query |
+| `TOP_N` | `20` | Ranked products to publish |
 
-Run the workflow manually once after secrets are configured. Inspect raw evidence and coverage warnings before relying on rankings.
+## Test without scraping
+
+```powershell
+python -m unittest discover -s tests -v
+$env:RADAR_MODE = "demo"
+python -m radar
+```
+
+Demo outputs are labelled and must never be interpreted as current Malaysia market data.
+
+## Operational limitations
+
+- Marketplace layout changes can require selector maintenance.
+- Search results can be personalized by location, account state, advertising, and availability.
+- A CAPTCHA or verification page is reported for manual handling, not bypassed.
+- Running from GitHub-hosted datacenter IPs is less reliable; the workflow deliberately targets a self-hosted Windows runner.
+- Collection must comply with applicable platform terms, Malaysian law, privacy requirements, and reasonable request rates.

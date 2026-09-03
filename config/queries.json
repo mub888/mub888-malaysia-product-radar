@@ -1,6 +1,7 @@
 {
   "country": "MY",
   "currency": "MYR",
+  "max_scrolls": 6,
   "marketplaces": ["tiktok", "lazada", "shopee"],
   "queries": [
     "wireless earbuds", "power bank", "phone accessories",

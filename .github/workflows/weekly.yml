@@ -10,25 +10,43 @@ permissions:
 
 jobs:
   collect-and-rank:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m radar
+      - name: Install collector
+        shell: powershell
+        run: |
+          python -m pip install -r requirements.txt
+          python -m playwright install chromium
+      - name: Collect, compare and publish data
+        shell: powershell
+        run: python -m radar
         env:
-          RADAR_MODE: provider
-          PROVIDER_ENDPOINT: ${{ secrets.PROVIDER_ENDPOINT }}
-          PROVIDER_TOKEN: ${{ secrets.PROVIDER_TOKEN }}
+          RADAR_MODE: direct
+          RADAR_HEADLESS: "true"
           RESULTS_PER_QUERY: "50"
           TOP_N: "20"
+      - name: Preserve browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-evidence-${{ github.run_id }}
+          path: output/*/evidence/
+          if-no-files-found: ignore
+          retention-days: 30
       - name: Commit weekly evidence and report
+        shell: powershell
         run: |
           git config user.name "product-radar-bot"
           git config user.email "product-radar-bot@users.noreply.github.com"
-          git add output/
-          git diff --cached --quiet || git commit -m "data: weekly Malaysia product radar"
-          git push
+          git add output/ docs/data/latest.json history/radar.sqlite3
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "data: weekly Malaysia product radar"
+            git push
+          }
