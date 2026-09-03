@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote_plus, urljoin
+from urllib.parse import quote, quote_plus, urljoin
 
 from .providers import normalize
 
@@ -60,6 +60,12 @@ def default_profile_dir() -> Path:
     if configured:
         return Path(configured).expanduser()
     return Path(__file__).resolve().parents[1] / "MarketWeb" / "chrome-profile"
+
+
+def _encode_query(marketplace: str, query: str) -> str:
+    if marketplace == "shopee":
+        return quote(query, safe="")
+    return quote_plus(query)
 
 
 def _launch_persistent_context(playwright: Any, profile: Path, headless: bool) -> Any:
@@ -257,7 +263,7 @@ def collect_direct(config: dict[str, Any], limit: int, evidence_dir: Path) -> tu
                 started = datetime.now(timezone.utc).isoformat()
                 slug = re.sub(r"[^a-z0-9]+", "-", query.lower()).strip("-")[:50]
                 screenshot = evidence_dir / f"{marketplace}-{slug}.png"
-                url = MARKETS[marketplace]["search"].format(query=quote_plus(query))
+                url = MARKETS[marketplace]["search"].format(query=_encode_query(marketplace, query))
                 try:
                     page.goto(url, wait_until="domcontentloaded", timeout=75_000)
                     page.wait_for_timeout(delay_ms)
