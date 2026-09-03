@@ -43,7 +43,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\setup_windows.ps1
 ```
 
-The setup opens TikTok Shop, Lazada and Shopee in your installed Google Chrome using the dedicated `MarketWeb\chrome-profile` browser profile. Complete any normal login or Malaysia-region prompt, return to PowerShell, and press Enter. The project never reads or exports saved passwords/cookies, and `MarketWeb` is excluded from Git.
+The setup opens TikTok Shop, Lazada and Shopee directly in your installed Google Chrome using the dedicated `MarketWeb\chrome-profile` browser profile. Complete any normal login or Malaysia-region prompt, close that MarketWeb Chrome window, return to PowerShell, and press Enter. The project never reads or exports saved passwords/cookies, and `MarketWeb` is excluded from Git.
 
 Run the first collection visibly:
 
