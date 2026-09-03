@@ -1,6 +1,6 @@
 import unittest
 
-from radar.collectors import _parse_card_text, parse_compact_number
+from radar.collectors import _encode_query, _parse_card_text, parse_compact_number
 from radar.scoring import rank
 
 
@@ -15,6 +15,10 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(parsed["original_price"], 29.90)
         self.assertEqual(parsed["sold"], 2500)
         self.assertEqual(parsed["rating"], 4.8)
+
+    def test_marketplace_query_encoding(self):
+        self.assertEqual(_encode_query("shopee", "wireless earbuds"), "wireless%20earbuds")
+        self.assertEqual(_encode_query("lazada", "wireless earbuds"), "wireless+earbuds")
 
 
 class ScoringTests(unittest.TestCase):
