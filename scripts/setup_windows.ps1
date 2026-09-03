@@ -7,9 +7,9 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
 python -m venv .venv
 & .\.venv\Scripts\python.exe -m pip install --upgrade pip
 & .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-& .\.venv\Scripts\python.exe -m playwright install chromium
 
-Write-Host "Opening normal browser pages for first-time login/region confirmation..."
+Write-Host "Opening your installed Google Chrome with a dedicated MarketWeb profile..."
+$env:RADAR_BROWSER_PROFILE = Join-Path $PSScriptRoot "..\MarketWeb\chrome-profile"
 $env:RADAR_MODE = "direct"
 & .\.venv\Scripts\python.exe -m radar login
 

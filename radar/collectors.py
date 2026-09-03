@@ -59,10 +59,34 @@ def default_profile_dir() -> Path:
     configured = os.getenv("RADAR_BROWSER_PROFILE", "").strip()
     if configured:
         return Path(configured).expanduser()
-    local_app_data = os.getenv("LOCALAPPDATA")
-    if local_app_data:
-        return Path(local_app_data) / "MalaysiaProductRadar" / "browser-profile"
-    return Path(__file__).resolve().parents[1] / ".browser-profile"
+    return Path(__file__).resolve().parents[1] / "MarketWeb" / "chrome-profile"
+
+
+def _launch_persistent_context(playwright: Any, profile: Path, headless: bool) -> Any:
+    """Use installed Google Chrome; never read or export browser passwords/cookies."""
+    explicit_executable = os.getenv("RADAR_BROWSER_EXECUTABLE", "").strip()
+    options: dict[str, Any] = {
+        "headless": headless,
+        "locale": "en-MY",
+        "timezone_id": "Asia/Kuala_Lumpur",
+        "viewport": {"width": 1440, "height": 1100},
+    }
+    if explicit_executable:
+        candidate = Path(explicit_executable)
+        if not candidate.is_file():
+            raise RuntimeError(f"RADAR_BROWSER_EXECUTABLE was not found: {candidate}")
+        options["executable_path"] = str(candidate)
+    else:
+        # Playwright's Chrome channel targets the user's installed Google Chrome,
+        # not the downloaded Chromium-for-Testing binary.
+        options["channel"] = "chrome"
+    try:
+        return playwright.chromium.launch_persistent_context(str(profile), **options)
+    except Exception as exc:
+        raise RuntimeError(
+            "Could not start regular Google Chrome. Install Google Chrome or set "
+            "RADAR_BROWSER_EXECUTABLE to the full path of chrome.exe."
+        ) from exc
 
 
 def parse_compact_number(value: str | None) -> int:
@@ -210,7 +234,7 @@ def collect_direct(config: dict[str, Any], limit: int, evidence_dir: Path) -> tu
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
-        raise RuntimeError("Install Playwright with: pip install -r requirements.txt; python -m playwright install chromium") from exc
+        raise RuntimeError("Install Playwright with: pip install -r requirements.txt") from exc
 
     headless = os.getenv("RADAR_HEADLESS", "true").lower() not in {"0", "false", "no"}
     delay_ms = max(1_500, int(os.getenv("RADAR_PAGE_DELAY_MS", "2500")))
@@ -223,13 +247,7 @@ def collect_direct(config: dict[str, Any], limit: int, evidence_dir: Path) -> tu
     runs: list[dict] = []
 
     with sync_playwright() as playwright:
-        context = playwright.chromium.launch_persistent_context(
-            str(profile),
-            headless=headless,
-            locale="en-MY",
-            timezone_id="Asia/Kuala_Lumpur",
-            viewport={"width": 1440, "height": 1100},
-        )
+        context = _launch_persistent_context(playwright, profile, headless)
         page = context.pages[0] if context.pages else context.new_page()
         for marketplace in config["marketplaces"]:
             if marketplace not in MARKETS:
@@ -281,7 +299,7 @@ def open_login_session() -> None:
     profile = default_profile_dir()
     profile.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
-        context = playwright.chromium.launch_persistent_context(str(profile), headless=False, locale="en-MY", timezone_id="Asia/Kuala_Lumpur")
+        context = _launch_persistent_context(playwright, profile, headless=False)
         pages = context.pages
         for index, market in enumerate(MARKETS.values()):
             page = pages[0] if index == 0 and pages else context.new_page()

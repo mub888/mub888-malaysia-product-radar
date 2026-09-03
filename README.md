@@ -4,7 +4,7 @@ A weekly, evidence-preserving Top 20 trend-opportunity comparison across TikTok 
 
 ## No-provider edition
 
-The default live mode uses a real Chromium browser on your own Windows PC. It needs no paid scraping endpoint and no scraping API token. A self-hosted GitHub Actions runner schedules the job and receives a temporary repository-scoped `GITHUB_TOKEN` automatically for committing results.
+The default live mode uses your installed regular Google Chrome on your own Windows PC. It needs no paid scraping endpoint and no scraping API token. A self-hosted GitHub Actions runner schedules the job and receives a temporary repository-scoped `GITHUB_TOKEN` automatically for committing results.
 
 The collector does **not** bypass CAPTCHAs, access controls, or private APIs. It collects product metadata visible in ordinary marketplace search pages and records a screenshot when a page requires manual attention.
 
@@ -34,7 +34,7 @@ The first snapshot automatically redistributes the velocity weight because no ea
 
 ## Windows installation
 
-Requirements: Windows 11, Python 3.12+, Git, and a Chromium-compatible environment.
+Requirements: Windows 11, Python 3.12+, Git, and Google Chrome.
 
 Open PowerShell inside the cloned repository and run:
 
@@ -43,7 +43,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\setup_windows.ps1
 ```
 
-The setup opens TikTok Shop, Lazada and Shopee in a persistent browser profile. Complete any normal login or Malaysia-region prompt, return to PowerShell, and press Enter. The browser profile stays under your Windows local application-data directory and is excluded from Git.
+The setup opens TikTok Shop, Lazada and Shopee in your installed Google Chrome using the dedicated `MarketWeb\chrome-profile` browser profile. Complete any normal login or Malaysia-region prompt, return to PowerShell, and press Enter. The project never reads or exports saved passwords/cookies, and `MarketWeb` is excluded from Git.
 
 Run the first collection visibly:
 
@@ -73,7 +73,8 @@ Environment settings:
 |---|---|---|
 | `RADAR_MODE` | `demo` | Set to `direct` for live browser collection |
 | `RADAR_HEADLESS` | `true` | Use `false` for visible troubleshooting |
-| `RADAR_BROWSER_PROFILE` | OS-specific local folder | Override persistent browser profile location |
+| `RADAR_BROWSER_PROFILE` | `MarketWeb/chrome-profile` | Override the dedicated Chrome profile location |
+| `RADAR_BROWSER_EXECUTABLE` | Chrome channel detection | Optional full path to `chrome.exe` |
 | `RADAR_PAGE_DELAY_MS` | `2500` | Minimum wait after page navigation |
 | `RESULTS_PER_QUERY` | `50` | Maximum offers per marketplace/query |
 | `TOP_N` | `20` | Ranked products to publish |
